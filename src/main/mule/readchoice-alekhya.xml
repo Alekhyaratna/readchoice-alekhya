@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="d1ca0aa6-2421-4d79-8d4a-798e3bd8b313" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="read_Config" doc:name="File Config" doc:id="e6e2314f-d33e-4588-8ef3-af6e76ffc3d6" >
+		<file:connection workingDir="C:\Users\alekhyar\Documents\read-choice" />
+	</file:config>
+	<file:config name="default_Config" doc:name="File Config" doc:id="9946c579-ed14-42f3-a655-9fcdbc6f7613" >
+		<file:connection workingDir="C:\Users\alekhyar\Documents\default" />
+	</file:config>
+	<flow name="readchoice-alekhyaFlow" doc:id="f4f35313-7bd6-4025-b19b-2b293a8dcd25" >
+		<http:listener doc:name="Listener" doc:id="3e012155-79e7-4378-a5bd-f83e9f57c30f" config-ref="HTTP_Listener_config" path="/readchoice"/>
+		<set-variable value="#[uuid()]" doc:name="Set Variable" doc:id="e6d96d87-1740-4cf1-8f07-15cde74235ec" variableName="CorrelationId"/>
+		<file:read doc:name="Read" doc:id="708291e0-e98a-4c6a-a062-53c8d0d1a763" config-ref="read_Config" path="choicefile.txt"/>
+		<choice doc:name="Choice" doc:id="5d1be4e3-c221-48cd-a979-99ce089c262d" >
+			<when expression="#[isEmpty(payload)]">
+				<file:write doc:name="Write" doc:id="c56f00e3-418d-486b-83ba-5ad6a500f747" config-ref="read_Config" path="emptyfile2.txt" mode="CREATE_NEW">
+					<file:content ><![CDATA[#["Hi alekhya , empty file"]]]></file:content>
+				</file:write>
+				<logger level="INFO" doc:name="Logger" doc:id="9528b7a7-b6f7-4825-b148-be48837347d1" message="correlationid- #[vars.CorrelationId] -- #[payload]"/>
+				<set-payload value="file is written" doc:name="Set Payload" doc:id="573052cf-fa02-4546-848e-ec2611fe7116" />
+				<logger level="INFO" doc:name="Logger" doc:id="a616b7d8-7566-4e7c-8b87-6b04d7924550" message="correlationid- #[vars.CorrelationId] -- #[payload]"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="e564bff2-c6c7-4d6f-9265-ff33eb331d7b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+"Name": "Alekhya",
+	fileoutput:  " This is next line"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<file:write doc:name="Write" doc:id="6a8137b8-18bc-432e-a275-2c32d99a0703" config-ref="default_Config" path="writedefault.txt" mode="CREATE_NEW">
+					<file:content ><![CDATA[#["this is default component"]]]></file:content>
+				</file:write>
+				<set-payload value="this is file is written (default)" doc:name="Set Payload" doc:id="6968f7f1-2ff5-4c7a-aa03-d5ba57a04d47" />
+				<logger level="INFO" doc:name="Logger" doc:id="b79f37aa-4f4d-446b-8e80-1b4f332d6f74" message="correlationid- #[vars.CorrelationId] -- #[payload]"/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
